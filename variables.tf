@@ -1,54 +1,73 @@
-variable "service_name" {
-  default = "Name of the service."
+variable "name" {
+  description = "Name of the service."
 }
-variable "service_image" {
+
+variable "image" {
   description = "URL to the service image. Currently only Docker Hub an ECR are supported."
 }
+
 variable "cpu" {
   description = "Number of CPU units to assign to this task."
 }
+
 variable "memory" {
   description = "Memory in MegaBytes to assign to this task."
+}
+
+variable "memory_reservation" {
+  description = "Memory in MegaBytes to reserve for this task."
+  default     = 0
 }
 
 variable "log_driver" {
   default = "awslogs"
 }
+
 variable "log_driver_options" {
   type = "map"
+
   default = {
-    "awslogs-group" = "common-log-group"
-    "awslogs-region"= "eu-west-1",
-    "awslogs-stream-prefix"= "container"
+    "awslogs-group"         = "common-log-group"
+    "awslogs-region"        = "eu-west-1"
+    "awslogs-stream-prefix" = "container"
   }
 }
 
 variable "port_mappings" {
   type = "list"
+
   default = [
     {
-      "hostPort" = "__NOT_DEFINED__",
+      "hostPort"      = "__NOT_DEFINED__"
       "containerPort" = "__NOT_DEFINED__"
-    }
+    },
   ]
 }
 
-variable "links" {
-  type = "list"
+variable "mount_points" {
+  type    = "list"
   default = []
 }
+
+variable "links" {
+  type    = "list"
+  default = []
+}
+
 variable "essential" {
   default = true
 }
+
 variable "entrypoint" {
   default = ""
 }
 
-
-variable "service_command" {
-  default = ""
+variable "command" {
+  default     = ""
   description = "The command that needs to run at startup of the task."
 }
+
 variable "environment_vars" {
-  type = "map"
+  type    = "map"
+  default = {}
 }

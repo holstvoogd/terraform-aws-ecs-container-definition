@@ -1,5 +1,6 @@
 data "template_file" "_log_configuration" {
   count = "${var.log_driver == "__NOT_DEFINED__" ? 0 : 1}"
+
   #  depends_on = ["data.template_file._log_driver_options"]
   template = <<JSON
 $${ jsonencode("logConfiguration") } : {
@@ -9,41 +10,44 @@ $${ log_driver_options }
 }
 }
 JSON
+
   vars {
-    log_driver = "${var.log_driver}"
+    log_driver         = "${var.log_driver}"
     log_driver_options = "${join(",\n", data.template_file._log_driver_options.*.rendered)}"
   }
 }
 
 data "template_file" "_log_driver_options" {
   count = "${ length(keys(var.log_driver_options)) }"
+
   template = <<JSON
 $${ jsonencode(key) }: $${ jsonencode(value)}
 JSON
 
   vars {
-    key = "${ element(keys(var.log_driver_options), count.index) }"
+    key   = "${ element(keys(var.log_driver_options), count.index) }"
     value = "${ lookup(var.log_driver_options, element(keys(var.log_driver_options), count.index)) }"
   }
 }
-
 
 data "template_file" "_port_mappings" {
   #  depends_on = ["data.template_file._port_mapping"]
   template = <<JSON
 $${val}
 JSON
+
   #host_port == "__NOT_DEFINED__" && container_port == "__NOT_DEFINED__" && protocol == "__NOT_DEFINED__" ? $${ jsonencode([])} : $${val}
   vars {
-    val = "${join(",\n", data.template_file._port_mapping.*.rendered)}"
-    host_port = "${ lookup(var.port_mappings[0], "hostPort", "") }"
+    val            = "${join(",\n", data.template_file._port_mapping.*.rendered)}"
+    host_port      = "${ lookup(var.port_mappings[0], "hostPort", "") }"
     container_port = "${ lookup(var.port_mappings[0], "containerPort") }"
-    protocol = "${ lookup(var.port_mappings[0], "protocol", "") }"
+    protocol       = "${ lookup(var.port_mappings[0], "protocol", "") }"
   }
 }
 
 data "template_file" "_port_mapping" {
   count = "${ lookup(var.port_mappings[0], "containerPort") == "__NOT_DEFINED__" ? 0 : length(var.port_mappings) }"
+
   template = <<JSON
 {
 $${join(",\n",
@@ -57,21 +61,44 @@ $${join(",\n",
 )}
 }
 JSON
+
   vars {
-    host_port = "${ lookup(var.port_mappings[count.index], "hostPort", "") }"
+    host_port      = "${ lookup(var.port_mappings[count.index], "hostPort", "") }"
     container_port = "${ lookup(var.port_mappings[count.index], "containerPort") }"
-    protocol = "${ lookup(var.port_mappings[count.index], "protocol", "") }"
+    protocol       = "${ lookup(var.port_mappings[count.index], "protocol", "") }"
   }
 }
+
+data "template_file" "_mount_points" {
+  template = <<JSON
+{
+$${join(",\n",
+    list(
+      "$${ jsonencode("containerPath") }: $${jsonencode(path)}",
+      "$${ jsonencode("sourceVolume") }:  $${jsonencode(volume)}",
+      "$${ jsonencode("readOnly") }:      $${jsonencode(readonly)}"
+    )
+)}
+}
+JSON
+
+  vars {
+    path     = "${ lookup(var.mount_points[count.index], "path") }"
+    volume   = "${ lookup(var.mount_points[count.index], "volume") }"
+    readonly = "${ lookup(var.mount_points[count.index], "readonly", false) }"
+  }
+}
+
 data "template_file" "_environment_vars" {
-  count = "${lookup(var.environment_vars, "__NOT_DEFINED__", "__ITS_DEFINED__") == "__NOT_DEFINED__" ? 0 : 1}"
-  depends_on = [
-    "data.template_file._environment_var"]
+  count      = "${lookup(var.environment_vars, "__NOT_DEFINED__", "__ITS_DEFINED__") == "__NOT_DEFINED__" ? 0 : 1}"
+  depends_on = ["data.template_file._environment_var"]
+
   template = <<JSON
 $${ jsonencode("environment") } : [
 $${val}
 ]
 JSON
+
   vars {
     val = "${join(",\n", data.template_file._environment_var.*.rendered)}"
   }
@@ -79,6 +106,7 @@ JSON
 
 data "template_file" "_environment_var" {
   count = "${ length(keys(var.environment_vars)) }"
+
   template = <<JSON
 {
 $${join(",\n",
@@ -93,7 +121,7 @@ $${join(",\n",
 JSON
 
   vars {
-    var_name = "${ element(sort(keys(var.environment_vars)), count.index) }"
+    var_name  = "${ element(sort(keys(var.environment_vars)), count.index) }"
     var_value = "${  lookup(var.environment_vars, element(sort(keys(var.environment_vars)), count.index), "") }"
   }
 }
@@ -102,26 +130,31 @@ data "template_file" "_final" {
   depends_on = [
     "data.template_file._environment_vars",
     "data.template_file._port_mappings",
+    "data.template_file._mount_points",
     "data.template_file._log_configuration",
   ]
+
   template = <<JSON
 [{
   $${val}
 }]
 JSON
+
   vars {
     val = "${join(",\n    ",
       compact(list(
         "${jsonencode("cpu")}: ${var.cpu}",
         "${jsonencode("memory")}: ${var.memory}",
+        "${jsonencode("memoryReservation")}: ${var.memory_reservation}",
         "${jsonencode("entryPoint")}: ${jsonencode(compact(split(" ", var.entrypoint)))}",
-        "${jsonencode("command")}: ${jsonencode(compact(split(" ", var.service_command)))}",
+        "${jsonencode("command")}: ${jsonencode(compact(split(" ", var.command)))}",
         "${jsonencode("links")}: ${jsonencode(var.links)}",
         "${jsonencode("portMappings")}: [${data.template_file._port_mappings.rendered}]",
+        "${jsonencode("mountPoints")}: [${data.template_file._mount_points.rendered}]",
         "${join("", data.template_file._environment_vars.*.rendered)}",
         "${join("", data.template_file._log_configuration.*.rendered)}",
-        "${jsonencode("name")}: ${jsonencode(var.service_name)}",
-        "${jsonencode("image")}: ${jsonencode(var.service_image)}",
+        "${jsonencode("name")}: ${jsonencode(var.name)}",
+        "${jsonencode("image")}: ${jsonencode(var.image)}",
         "${jsonencode("essential")}: ${var.essential ? true : false }"
         ))
     )}"
