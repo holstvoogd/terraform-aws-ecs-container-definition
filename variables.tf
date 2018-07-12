@@ -16,7 +16,6 @@ variable "memory" {
 
 variable "memory_reservation" {
   description = "Memory in MegaBytes to reserve for this task."
-  default     = 0
 }
 
 variable "log_driver" {

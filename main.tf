@@ -75,17 +75,15 @@ data "template_file" "_mount_points" {
 $${join(",\n",
     list(
       "$${ jsonencode("containerPath") }: $${jsonencode(path)}",
-      "$${ jsonencode("sourceVolume") }:  $${jsonencode(volume)}",
-      "$${ jsonencode("readOnly") }:      $${jsonencode(readonly)}"
+      "$${ jsonencode("sourceVolume") }:  $${jsonencode(volume)}"
     )
 )}
 }
 JSON
 
   vars {
-    path     = "${ lookup(var.mount_points[count.index], "path") }"
-    volume   = "${ lookup(var.mount_points[count.index], "volume") }"
-    readonly = "${ lookup(var.mount_points[count.index], "readonly", false) }"
+    path   = "${ lookup(var.mount_points[count.index], "path") }"
+    volume = "${ lookup(var.mount_points[count.index], "volume") }"
   }
 }
 
