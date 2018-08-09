@@ -66,6 +66,11 @@ variable "command" {
   description = "The command that needs to run at startup of the task."
 }
 
+variable "ulimits" {
+  type    = "map"
+  default = {}
+}
+
 variable "environment_vars" {
   type    = "map"
   default = {}

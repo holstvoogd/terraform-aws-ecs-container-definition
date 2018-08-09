@@ -87,6 +87,44 @@ JSON
   }
 }
 
+data "template_file" "_ulimits" {
+  count      = "${lookup(var.ulimits, "__NOT_DEFINED__", "__ITS_DEFINED__") == "__NOT_DEFINED__" ? 0 : 1}"
+  depends_on = ["data.template_file._ulimit"]
+
+  template = <<JSON
+$${ jsonencode("ulimits") } : [
+$${val}
+]
+JSON
+
+  vars {
+    val = "${join(",\n", data.template_file._ulimit.*.rendered)}"
+  }
+}
+
+data "template_file" "_ulimit" {
+  count = "${ length(keys(var.ulimits)) }"
+
+  template = <<JSON
+{
+$${join(",\n",
+  compact(
+    list(
+    var_name == "__NOT_DEFINED__" ? "" : "$${ jsonencode("name") }: $${ jsonencode(var_name)}",
+    var_value == "__NOT_DEFINED__" ? "" : "$${ jsonencode("softLimit") }: $${ var_value }",
+    var_value == "__NOT_DEFINED__" ? "" : "$${ jsonencode("hardLimit") }: $${ var_value }"
+    )
+  )
+)}
+}
+JSON
+
+  vars {
+    var_name  = "${ element(sort(keys(var.ulimits)), count.index) }"
+    var_value = "${ lookup(var.ulimits, element(sort(keys(var.ulimits)), count.index), "") }"
+  }
+}
+
 data "template_file" "_environment_vars" {
   count      = "${lookup(var.environment_vars, "__NOT_DEFINED__", "__ITS_DEFINED__") == "__NOT_DEFINED__" ? 0 : 1}"
   depends_on = ["data.template_file._environment_var"]
@@ -126,6 +164,7 @@ JSON
 
 data "template_file" "_final" {
   depends_on = [
+    "data.template_file._ulimits",
     "data.template_file._environment_vars",
     "data.template_file._port_mappings",
     "data.template_file._mount_points",
@@ -149,6 +188,7 @@ JSON
         "${jsonencode("links")}: ${jsonencode(var.links)}",
         "${jsonencode("portMappings")}: [${data.template_file._port_mappings.rendered}]",
         "${jsonencode("mountPoints")}: [${data.template_file._mount_points.rendered}]",
+        "${join("", data.template_file._ulimits.*.rendered)}",
         "${join("", data.template_file._environment_vars.*.rendered)}",
         "${join("", data.template_file._log_configuration.*.rendered)}",
         "${jsonencode("name")}: ${jsonencode(var.name)}",
