@@ -1,13 +1,12 @@
 data "template_file" "_log_configuration" {
   count = "${var.log_driver == "__NOT_DEFINED__" ? 0 : 1}"
 
-  #  depends_on = ["data.template_file._log_driver_options"]
   template = <<JSON
-$${ jsonencode("logConfiguration") } : {
-$${ jsonencode("logDriver") } : $${ jsonencode(log_driver) },
-$${ jsonencode("options") } : {
-$${ log_driver_options }
-}
+{
+  $${ jsonencode("logDriver") } : $${ jsonencode(log_driver) },
+    $${ jsonencode("options") } : {
+      $${ log_driver_options }
+    }
 }
 JSON
 
@@ -31,12 +30,10 @@ JSON
 }
 
 data "template_file" "_port_mappings" {
-  #  depends_on = ["data.template_file._port_mapping"]
   template = <<JSON
 $${val}
 JSON
 
-  #host_port == "__NOT_DEFINED__" && container_port == "__NOT_DEFINED__" && protocol == "__NOT_DEFINED__" ? $${ jsonencode([])} : $${val}
   vars {
     val            = "${join(",\n", data.template_file._port_mapping.*.rendered)}"
     host_port      = "${ lookup(var.port_mappings[0], "hostPort", "") }"
@@ -70,6 +67,8 @@ JSON
 }
 
 data "template_file" "_mount_points" {
+  count = "${length(var.mount_points)}"
+
   template = <<JSON
 {
 $${join(",\n",
@@ -87,23 +86,8 @@ JSON
   }
 }
 
-data "template_file" "_ulimits" {
-  count      = "${lookup(var.ulimits, "__NOT_DEFINED__", "__ITS_DEFINED__") == "__NOT_DEFINED__" ? 0 : 1}"
-  depends_on = ["data.template_file._ulimit"]
-
-  template = <<JSON
-$${ jsonencode("ulimits") } : [
-$${val}
-]
-JSON
-
-  vars {
-    val = "${join(",\n", data.template_file._ulimit.*.rendered)}"
-  }
-}
-
 data "template_file" "_ulimit" {
-  count = "${ length(keys(var.ulimits)) }"
+  count = "${length(keys(var.ulimits))}"
 
   template = <<JSON
 {
@@ -125,31 +109,16 @@ JSON
   }
 }
 
-data "template_file" "_environment_vars" {
-  count      = "${lookup(var.environment_vars, "__NOT_DEFINED__", "__ITS_DEFINED__") == "__NOT_DEFINED__" ? 0 : 1}"
-  depends_on = ["data.template_file._environment_var"]
-
-  template = <<JSON
-$${ jsonencode("environment") } : [
-$${val}
-]
-JSON
-
-  vars {
-    val = "${join(",\n", data.template_file._environment_var.*.rendered)}"
-  }
-}
-
 data "template_file" "_environment_var" {
-  count = "${ length(keys(var.environment_vars)) }"
+  count = "${length(keys(var.environment_vars))}"
 
   template = <<JSON
 {
 $${join(",\n",
   compact(
     list(
-    var_name == "__NOT_DEFINED__" ? "" : "$${ jsonencode("name") }: $${ jsonencode(var_name)}",
-    var_value == "__NOT_DEFINED__" ? "" : "$${ jsonencode("value") }: $${ jsonencode(var_value)}"
+      "$${ jsonencode("name") }: $${ jsonencode(var_name)}",
+      "$${ jsonencode("value") }: $${ jsonencode(var_value)}"
     )
   )
 )}
@@ -164,8 +133,8 @@ JSON
 
 data "template_file" "_final" {
   depends_on = [
-    "data.template_file._ulimits",
-    "data.template_file._environment_vars",
+    "data.template_file._ulimit",
+    "data.template_file._environment_var",
     "data.template_file._port_mappings",
     "data.template_file._mount_points",
     "data.template_file._log_configuration",
@@ -180,20 +149,20 @@ JSON
   vars {
     val = "${join(",\n    ",
       compact(list(
-        "${jsonencode("cpu")}: ${var.cpu}",
-        "${jsonencode("memory")}: ${var.memory}",
-        "${jsonencode("memoryReservation")}: ${var.memory_reservation}",
-        "${jsonencode("entryPoint")}: ${jsonencode(compact(split(" ", var.entrypoint)))}",
-        "${jsonencode("command")}: ${jsonencode(compact(split(" ", var.command)))}",
-        "${jsonencode("links")}: ${jsonencode(var.links)}",
-        "${jsonencode("portMappings")}: [${data.template_file._port_mappings.rendered}]",
-        "${jsonencode("mountPoints")}: [${data.template_file._mount_points.rendered}]",
-        "${join("", data.template_file._ulimits.*.rendered)}",
-        "${join("", data.template_file._environment_vars.*.rendered)}",
-        "${join("", data.template_file._log_configuration.*.rendered)}",
-        "${jsonencode("name")}: ${jsonencode(var.name)}",
-        "${jsonencode("image")}: ${jsonencode(var.image)}",
-        "${jsonencode("essential")}: ${var.essential ? true : false }"
+        "${jsonencode("cpu")}:                ${var.cpu}",
+        "${jsonencode("memory")}:             ${var.memory}",
+        "${jsonencode("memoryReservation")}:  ${var.memory_reservation}",
+        "${jsonencode("entryPoint")}:         ${jsonencode(compact(split(" ", var.entrypoint)))}",
+        "${jsonencode("command")}:            ${jsonencode(compact(split(" ", var.command)))}",
+        "${jsonencode("links")}:              ${jsonencode(var.links)}",
+        "${jsonencode("portMappings")}:      [${data.template_file._port_mappings.rendered}]",
+        "${jsonencode("mountPoints")}:       [${join(",\n", data.template_file._mount_points.*.rendered)}]",
+        "${jsonencode("ulimits")}:           [${join(",\n", data.template_file._ulimit.*.rendered)}]",
+        "${jsonencode("environment")}:       [${join(",\n", data.template_file._environment_var.*.rendered)}]",
+        "${jsonencode("logConfiguration")}:   ${data.template_file._log_configuration.rendered}",
+        "${jsonencode("name")}:               ${jsonencode(var.name)}",
+        "${jsonencode("image")}:              ${jsonencode(var.image)}",
+        "${jsonencode("essential")}:          ${var.essential ? true : false }"
         ))
     )}"
   }
