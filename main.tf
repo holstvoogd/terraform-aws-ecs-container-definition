@@ -141,9 +141,9 @@ data "template_file" "_final" {
   ]
 
   template = <<JSON
-[{
+{
   $${val}
-}]
+}
 JSON
 
   vars {
