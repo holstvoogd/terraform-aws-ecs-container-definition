@@ -162,6 +162,7 @@ JSON
         "${jsonencode("logConfiguration")}:   ${data.template_file._log_configuration.rendered}",
         "${jsonencode("name")}:               ${jsonencode(var.name)}",
         "${jsonencode("image")}:              ${jsonencode(var.image)}",
+        "${jsonencode("hostname")}:           ${jsonencode(var.hostname)}",
         "${jsonencode("essential")}:          ${var.essential ? true : false }"
         ))
     )}"

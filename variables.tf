@@ -61,6 +61,10 @@ variable "entrypoint" {
   default = ""
 }
 
+variable "hostname" {
+  default = ""
+}
+
 variable "command" {
   default     = ""
   description = "The command that needs to run at startup of the task."
