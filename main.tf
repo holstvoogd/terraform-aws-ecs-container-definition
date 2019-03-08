@@ -35,10 +35,7 @@ $${val}
 JSON
 
   vars {
-    val            = "${join(",\n", data.template_file._port_mapping.*.rendered)}"
-    host_port      = "${ lookup(var.port_mappings[0], "hostPort", "") }"
-    container_port = "${ lookup(var.port_mappings[0], "containerPort") }"
-    protocol       = "${ lookup(var.port_mappings[0], "protocol", "") }"
+    val = "${join(",\n", data.template_file._port_mapping.*.rendered)}"
   }
 }
 
@@ -48,21 +45,19 @@ data "template_file" "_port_mapping" {
   template = <<JSON
 {
 $${join(",\n",
-  compact(
-    list(
-    host_port == "" || host_port == "__NOT_DEFINED_" ? "" : "$${ jsonencode("hostPort") }: $${host_port}",
-    container_port == "" || container_port == "__NOT_DEFINED_" ? "" : "$${jsonencode("containerPort")}: $${container_port}",
-    protocol == "" || protocol == "__NOT_DEFINED_" ? "" : "$${ jsonencode("protocol") }: $${jsonencode(protocol)}"
-    )
+  list(
+  "$${ jsonencode("hostPort") }: $${host_port}",
+  "$${jsonencode("containerPort")}: $${container_port}",
+  "$${ jsonencode("protocol") }: $${jsonencode(protocol)}"
   )
 )}
 }
 JSON
 
   vars {
-    host_port      = "${ lookup(var.port_mappings[count.index], "hostPort", "") }"
-    container_port = "${ lookup(var.port_mappings[count.index], "containerPort") }"
-    protocol       = "${ lookup(var.port_mappings[count.index], "protocol", "") }"
+    host_port      = "${ lookup(var.port_mappings[0], "hostPort", "0") }"
+    container_port = "${ lookup(var.port_mappings[0], "containerPort") }"
+    protocol       = "${ lookup(var.port_mappings[0], "protocol", "tcp") }"
   }
 }
 
@@ -126,8 +121,8 @@ $${join(",\n",
 JSON
 
   vars {
-    var_name  = "${ element(sort(keys(var.environment_vars)), count.index) }"
-    var_value = "${  lookup(var.environment_vars, element(sort(keys(var.environment_vars)), count.index), "") }"
+    var_name  = "${ element(keys(var.environment_vars), count.index) }"
+    var_value = "${  lookup(var.environment_vars, element(keys(var.environment_vars), count.index), "") }"
   }
 }
 
@@ -163,7 +158,8 @@ JSON
         "${jsonencode("name")}:               ${jsonencode(var.name)}",
         "${jsonencode("image")}:              ${jsonencode(var.image)}",
         "${jsonencode("hostname")}:           ${jsonencode(var.hostname)}",
-        "${jsonencode("essential")}:          ${var.essential ? true : false }"
+        "${jsonencode("essential")}:          ${var.essential ? true : false }",
+        "${jsonencode("volumesFrom")}:       []"
         ))
     )}"
   }
