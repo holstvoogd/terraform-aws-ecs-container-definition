@@ -35,12 +35,7 @@ variable "log_driver_options" {
 variable "port_mappings" {
   type = "list"
 
-  default = [
-    {
-      "hostPort"      = "__NOT_DEFINED__"
-      "containerPort" = "__NOT_DEFINED__"
-    },
-  ]
+  default = []
 }
 
 variable "mount_points" {
