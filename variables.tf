@@ -57,7 +57,7 @@ variable "entrypoint" {
 }
 
 variable "hostname" {
-  default = ""
+  default = null
 }
 
 variable "command" {
