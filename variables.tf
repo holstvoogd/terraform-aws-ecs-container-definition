@@ -23,7 +23,7 @@ variable "log_driver" {
 }
 
 variable "log_driver_options" {
-  type = "map"
+  type = map
 
   default = {
     "awslogs-group"         = "common-log-group"
@@ -33,18 +33,18 @@ variable "log_driver_options" {
 }
 
 variable "port_mappings" {
-  type = "list"
+  type = list
 
   default = []
 }
 
 variable "mount_points" {
-  type    = "list"
+  type    = list
   default = []
 }
 
 variable "links" {
-  type    = "list"
+  type    = list
   default = []
 }
 
@@ -66,11 +66,11 @@ variable "command" {
 }
 
 variable "ulimits" {
-  type    = "map"
+  type    = map
   default = {}
 }
 
 variable "environment_vars" {
-  type    = "map"
+  type    = map
   default = {}
 }
